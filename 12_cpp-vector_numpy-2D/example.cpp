@@ -36,7 +36,7 @@ void exec_combine() {
 
 void import_sys_modules() {
 	py::module sys = py::module::import("sys");
-        py::print(sys.attr("path"));
+        py::print(sys.attr("version_info"));
 }
 
 void import_user_modules() {
