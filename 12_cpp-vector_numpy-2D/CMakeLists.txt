@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 project(example)
 
+#find_package(pybind11 REQUIRED)
 add_subdirectory(pybind11)
-pybind11_add_module(example example.cpp)
+
+add_executable(example example.cpp)
+target_link_libraries(example PRIVATE pybind11::embed)

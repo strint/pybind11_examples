@@ -1,70 +1,52 @@
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
-#include <vector>
-
-// -------------
-// pure C++ code
-// -------------
-
-std::vector<double> sum(const std::vector<double>& pos)
-{
-  size_t N = pos.size() / 2;
-
-  std::vector<double> output(N*3);
-
-  for ( size_t i = 0 ; i < N ; ++i ) {
-    output[i*3+0] = pos[i*2+0];
-    output[i*3+1] = pos[i*2+1];
-    output[i*3+2] = pos[i*2+0] + pos[i*2+1];
-  }
-
-  return output;
-}
-
-// ----------------
-// Python interface
-// ----------------
+#include "pybind11/embed.h" // everything needed for embedding
+#include <iostream>
 
 namespace py = pybind11;
 
-// wrap C++ function with NumPy array IO
-py::array py_sum(py::array_t<double, py::array::c_style | py::array::forcecast> array)
-{
-  // check input dimensions
-  if ( array.ndim()     != 2 )
-    throw std::runtime_error("Input should be 2-D NumPy array");
-  if ( array.shape()[1] != 2 )
-    throw std::runtime_error("Input should have size [N,2]");
-
-  // allocate std::vector (to pass to the C++ function)
-  std::vector<double> pos(array.size());
-
-  // copy py::array -> std::vector
-  std::memcpy(pos.data(),array.data(),array.size()*sizeof(double));
-
-  // call pure C++ function
-  std::vector<double> result = sum(pos);
-
-  ssize_t              ndim    = 2;
-  std::vector<ssize_t> shape   = { array.shape()[0] , 3 };
-  std::vector<ssize_t> strides = { sizeof(double)*3 , sizeof(double) };
-
-  // return 2-D NumPy array
-  return py::array(py::buffer_info(
-    result.data(),                           /* data as contiguous array  */
-    sizeof(double),                          /* size of one scalar        */
-    py::format_descriptor<double>::format(), /* data type                 */
-    ndim,                                    /* number of dimensions      */
-    shape,                                   /* shape of the matrix       */
-    strides                                  /* strides for each axis     */
-  ));
+void say_hello() {
+	py::print("Hello, World!"); // use the Python API
 }
 
-// wrap as Python module
-PYBIND11_MODULE(example,m)
-{
-  m.doc() = "pybind11 example plugin";
+void exec_py_code() {
+	py::exec(R"(
+        kwargs = dict(name="World", number=42)
+        message = "Hello, {name}! The answer is {number}".format(**kwargs)
+        print(message)
+    )");
+}
 
-  m.def("sum", &py_sum, "Calculate the sum of an array of vectors");
+
+void exec_using_api() {
+	using namespace py::literals;
+	auto kwargs = py::dict("name"_a = "World", "number"_a = 42);
+	auto message = "Hello, {name}! The answer is {number}"_s.format(**kwargs);
+	py::print(message);
+}
+
+void exec_combine() {
+	using namespace py::literals;
+	auto locals = py::dict("name"_a = "World", "number"_a = 42);
+	py::exec(R"(
+        message = "Hello, {name}! The answer is {number}".format(**locals())
+    )", py::globals(), locals);
+
+	auto message = locals["message"].cast<std::string>();
+	std::cout << message << std::endl;
+}
+
+void import_modules() {
+	py::module calc = py::module::import("calc");
+	py::object result = calc.attr("add")(1, 2);
+	int n = result.cast<int>();
+	std::cout << n << std::endl;
+	assert(n == 3);
+}
+
+int main() {
+	py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+	say_hello();
+	exec_py_code();
+	exec_using_api();
+	exec_combine();
+	import_modules();
 }
