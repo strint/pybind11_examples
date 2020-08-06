@@ -34,7 +34,12 @@ void exec_combine() {
 	std::cout << message << std::endl;
 }
 
-void import_modules() {
+void import_sys_modules() {
+	py::module sys = py::module::import("sys");
+        py::print(sys.attr("path"));
+}
+
+void import_user_modules() {
 	py::module calc = py::module::import("calc");
 	py::object result = calc.attr("add")(1, 2);
 	int n = result.cast<int>();
@@ -48,5 +53,6 @@ int main() {
 	exec_py_code();
 	exec_using_api();
 	exec_combine();
-	import_modules();
+	import_sys_modules();
+	import_user_modules();
 }
