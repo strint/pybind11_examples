@@ -39,12 +39,11 @@ void import_sys_modules() {
         py::print(sys.attr("version_info"));
 }
 
-void import_user_modules() {
+void import_user_modules(int a, int b) {
 	py::module calc = py::module::import("calc");
-	py::object result = calc.attr("add")(1, 2);
+	py::object result = calc.attr("add")(a, b);
 	int n = result.cast<int>();
-	std::cout << n << std::endl;
-	assert(n == 3);
+	// std::cout << n << std::endl;
 }
 
 int main() {
@@ -54,5 +53,7 @@ int main() {
 	exec_using_api();
 	exec_combine();
 	import_sys_modules();
-	import_user_modules();
+	import_user_modules(1, 2);
+	import_user_modules(2, 3);
+	import_user_modules(3, 4);
 }
