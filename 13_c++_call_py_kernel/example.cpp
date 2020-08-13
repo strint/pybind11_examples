@@ -1,16 +1,28 @@
-#include "pybind11/embed.h" // everything needed for embedding
+#include "pybind11/embed.h"
+#include "pybind11/numpy.h"
+#include "pybind11/stl.h"
+
 #include <iostream>
 
 namespace py = pybind11;
 
-void run_py_kernel(int a, int b) {
-  py::module py_kernel = py::module::import("py_kernel");
-  py::object result = py_kernel.attr("add")(a, b);
-  int n = result.cast<int>();
-  std::cout << n << std::endl;
+// ref : https://github.com/pybind/pybind11/issues/1042
+
+template<typename T> void run_py_kernel_sigmoid_numpy(std::vector<T> x) {
+  for (auto& i : x) {
+    std::cout << i << std::endl;
+  }
+  auto x_array = py::array_t<T>(x.size(), x.data());
+  py::module py_kernel = py::module::import("pyk_sigmoid_numpy");
+  py::object result = py_kernel.attr("forward")(x_array);
+  auto n = result.cast<std::vector<T>>();
+  for (auto& i : n) {
+    std::cout << i << std::endl;
+  }
 }
 
 int main() {
   py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-  run_py_kernel(1, 2);
+  std::vector<float> x{1, 1, 1};
+  run_py_kernel_sigmoid_numpy(x);
 }
